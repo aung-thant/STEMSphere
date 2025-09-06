@@ -1,10 +1,14 @@
 {
   "name": "stemsphere",
   "version": "1.0.0",
+  "description": "A web platform for STEM education resources",
+  "main": "index.js",
   "scripts": {
-    "start": "node app.js" // Adjust to your entry file (e.g., server.js)
+    "start": "node index.js"
   },
   "dependencies": {
-    // Add your dependencies here
-  }
+    "express": "^4.17.1"
+  },
+  "author": "Aung Thant",
+  "license": "MIT"
 }
