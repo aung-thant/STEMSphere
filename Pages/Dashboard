@@ -1,0 +1,78 @@
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
+import { Course } from "@/entities/Course";
+import { Enrollment } from "@/entities/Enrollment";
+import { Assignment } from "@/entities/Assignment";
+import { Submission } from "@/entities/Submission";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, Users, Award, Clock, TrendingUp, Bell } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+import StudentDashboard from "../components/dashboard/StudentDashboard";
+import TeacherDashboard from "../components/dashboard/TeacherDashboard";
+import AdminDashboard from "../components/dashboard/AdminDashboard";
+
+export default function Dashboard() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+    } catch (error) {
+      console.error("Error loading user:", error);
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-slate-200 rounded w-64 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-slate-200 rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const renderRoleSpecificDashboard = () => {
+    switch (user?.role) {
+      case "student":
+        return <StudentDashboard user={user} />;
+      case "teacher":
+        return <TeacherDashboard user={user} />;
+      case "admin":
+        return <AdminDashboard user={user} />;
+      default:
+        return <div>Unknown user role</div>;
+    }
+  };
+
+  return (
+    <div className="p-6 md:p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome back, {user?.full_name || user?.email}!
+          </h1>
+          <p className="text-gray-600 capitalize">
+            {user?.role} Dashboard
+          </p>
+        </div>
+
+        {renderRoleSpecificDashboard()}
+      </div>
+    </div>
+  );
+}

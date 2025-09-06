@@ -1,0 +1,205 @@
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
+import { Course } from "@/entities/Course";
+import { Enrollment } from "@/entities/Enrollment";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Users, BookOpen, TrendingUp, Settings, UserPlus, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+export default function AdminDashboard({ user }) {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalCourses: 0,
+    totalEnrollments: 0,
+    recentUsers: [],
+    recentCourses: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const [users, courses, enrollments] = await Promise.all([
+        User.list('-created_date'),
+        Course.list('-created_date'),
+        Enrollment.list('-created_date')
+      ]);
+
+      setStats({
+        totalUsers: users.length,
+        totalCourses: courses.length,
+        totalEnrollments: enrollments.length,
+        recentUsers: users.slice(0, 5),
+        recentCourses: courses.slice(0, 5)
+      });
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    }
+    setLoading(false);
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case "admin": return "bg-red-100 text-red-800";
+      case "teacher": return "bg-green-100 text-green-800";
+      default: return "bg-blue-100 text-blue-800";
+    }
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Users</p>
+                <p className="text-3xl font-bold">{stats.totalUsers}</p>
+              </div>
+              <Users className="w-8 h-8 text-blue-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Total Courses</p>
+                <p className="text-3xl font-bold">{stats.totalCourses}</p>
+              </div>
+              <BookOpen className="w-8 h-8 text-green-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Total Enrollments</p>
+                <p className="text-3xl font-bold">{stats.totalEnrollments}</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-orange-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Platform Health</p>
+                <p className="text-3xl font-bold">98%</p>
+              </div>
+              <Settings className="w-8 h-8 text-purple-200" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Recent Users */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              Recent Users
+            </CardTitle>
+            <Button size="sm" asChild>
+              <Link to={createPageUrl("Users")}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Manage Users
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
+                      {(user.full_name || user.email)?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium">{user.full_name || user.email}</p>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                    </div>
+                  </div>
+                  <Badge className={getRoleColor(user.role)}>
+                    {user.role}
+                  </Badge>
+                </div>
+              ))}
+              {stats.recentUsers.length === 0 && (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No users found</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Courses */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-green-500" />
+              Recent Courses
+            </CardTitle>
+            <Button size="sm" asChild>
+              <Link to={createPageUrl("Courses")}>
+                View All
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentCourses.map((course) => (
+                <div key={course.id} className="p-4 border rounded-xl">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold">{course.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        by Teacher {course.teacher_id}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="capitalize">
+                      {course.status}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge variant="secondary" className="capitalize">
+                      {course.category}
+                    </Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {course.difficulty}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+              {stats.recentCourses.length === 0 && (
+                <div className="text-center py-8">
+                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No courses found</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

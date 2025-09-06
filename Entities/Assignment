@@ -1,0 +1,73 @@
+{
+  "name": "Assignment",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Assignment title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Assignment instructions"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "ID of the course this assignment belongs to"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Assignment due date"
+    },
+    "max_points": {
+      "type": "number",
+      "default": 100,
+      "description": "Maximum points for this assignment"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "essay",
+        "quiz",
+        "project",
+        "presentation"
+      ],
+      "default": "essay",
+      "description": "Type of assignment"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "multiple_choice",
+              "text",
+              "file_upload"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correct_answer": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Quiz questions (if type is quiz)"
+    }
+  },
+  "required": [
+    "title",
+    "description",
+    "course_id"
+  ]
+}

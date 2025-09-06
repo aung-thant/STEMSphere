@@ -1,0 +1,273 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { Course } from "@/entities/Course";
+import { User } from "@/entities/User";
+import { Enrollment } from "@/entities/Enrollment";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BookOpen, Clock, Star, Users, Search, Filter } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+export default function Courses() {
+  const [courses, setCourses] = useState([]);
+  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [user, setUser] = useState(null);
+  const [enrollments, setEnrollments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+
+  const filterCourses = useCallback(() => {
+    let filtered = courses;
+
+    if (searchTerm) {
+      filtered = filtered.filter(course =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(course => course.category === categoryFilter);
+    }
+
+    if (difficultyFilter !== "all") {
+      filtered = filtered.filter(course => course.difficulty === difficultyFilter);
+    }
+
+    setFilteredCourses(filtered);
+  }, [courses, searchTerm, categoryFilter, difficultyFilter]); // Dependencies for useCallback
+
+  const loadData = async () => {
+    try {
+      const [courseData, currentUser] = await Promise.all([
+        Course.filter({ status: "published" }),
+        User.me()
+      ]);
+
+      setCourses(courseData);
+      setUser(currentUser);
+
+      if (currentUser.role === "student") {
+        const enrollmentData = await Enrollment.filter({ student_id: currentUser.id });
+        setEnrollments(enrollmentData);
+      }
+    } catch (error) {
+      console.error("Error loading courses:", error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    filterCourses();
+  }, [filterCourses]); // Now filterCourses is a dependency itself, memoized by useCallback
+
+  const isEnrolled = (courseId) => {
+    return enrollments.some(e => e.course_id === courseId);
+  };
+
+  const handleEnroll = async (courseId) => {
+    if (user.role !== "student") return;
+    
+    try {
+      await Enrollment.create({
+        student_id: user.id,
+        course_id: courseId,
+        status: "active"
+      });
+      
+      // Reload enrollments
+      const enrollmentData = await Enrollment.filter({ student_id: user.id });
+      setEnrollments(enrollmentData);
+    } catch (error) {
+      console.error("Error enrolling in course:", error);
+    }
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      programming: "bg-blue-100 text-blue-800",
+      design: "bg-purple-100 text-purple-800",
+      business: "bg-green-100 text-green-800",
+      marketing: "bg-orange-100 text-orange-800",
+      data_science: "bg-red-100 text-red-800",
+      other: "bg-gray-100 text-gray-800"
+    };
+    return colors[category] || colors.other;
+  };
+
+  const getDifficultyColor = (difficulty) => {
+    const colors = {
+      beginner: "bg-green-100 text-green-800",
+      intermediate: "bg-yellow-100 text-yellow-800",
+      advanced: "bg-red-100 text-red-800"
+    };
+    return colors[difficulty] || colors.beginner;
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-slate-200 rounded w-64 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-80 bg-slate-200 rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 md:p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Course Catalog</h1>
+          <p className="text-gray-600">
+            Discover and enroll in courses to advance your learning
+          </p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  placeholder="Search courses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-48">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="programming">Programming</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="data_science">Data Science</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Course Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredCourses.map((course) => (
+            <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
+              <div className="aspect-video bg-gradient-to-br from-blue-500 to-purple-600 relative overflow-hidden">
+                {course.thumbnail ? (
+                  <img 
+                    src={course.thumbnail} 
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <BookOpen className="w-12 h-12 text-white opacity-80" />
+                  </div>
+                )}
+                <div className="absolute top-4 left-4">
+                  <Badge className={getDifficultyColor(course.difficulty)}>
+                    {course.difficulty}
+                  </Badge>
+                </div>
+                {isEnrolled(course.id) && (
+                  <div className="absolute top-4 right-4">
+                    <Badge className="bg-green-500 text-white">Enrolled</Badge>
+                  </div>
+                )}
+              </div>
+              
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <Badge className={getCategoryColor(course.category)} variant="secondary">
+                    {course.category.replace('_', ' ')}
+                  </Badge>
+                </div>
+                
+                <h3 className="font-bold text-lg mb-2 line-clamp-2">{course.title}</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">{course.description}</p>
+                
+                <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {course.duration_hours}h
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    0 students
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button asChild className="flex-1">
+                    <Link to={createPageUrl(`Course?id=${course.id}`)}>
+                      View Course
+                    </Link>
+                  </Button>
+                  {user?.role === "student" && !isEnrolled(course.id) && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleEnroll(course.id)}
+                      className="flex-1"
+                    >
+                      Enroll
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredCourses.length === 0 && (
+          <div className="text-center py-16">
+            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses found</h3>
+            <p className="text-gray-600 mb-6">Try adjusting your search or filter criteria</p>
+            {user?.role === "teacher" && (
+              <Button asChild>
+                <Link to={createPageUrl("CreateCourse")}>Create Your First Course</Link>
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

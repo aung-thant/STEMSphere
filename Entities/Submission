@@ -1,0 +1,59 @@
+{
+  "name": "Submission",
+  "type": "object",
+  "properties": {
+    "assignment_id": {
+      "type": "string",
+      "description": "ID of the assignment"
+    },
+    "student_id": {
+      "type": "string",
+      "description": "ID of the student who submitted"
+    },
+    "content": {
+      "type": "string",
+      "description": "Submission content or text"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of submitted file (if applicable)"
+    },
+    "grade": {
+      "type": "number",
+      "description": "Grade received (out of max_points)"
+    },
+    "feedback": {
+      "type": "string",
+      "description": "Teacher feedback"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "graded",
+        "late"
+      ],
+      "default": "submitted",
+      "description": "Submission status"
+    },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "number"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Quiz answers (if assignment is quiz)"
+    }
+  },
+  "required": [
+    "assignment_id",
+    "student_id"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "name": "Lesson",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Lesson title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Lesson description"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "ID of the course this lesson belongs to"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "YouTube video URL"
+    },
+    "order": {
+      "type": "number",
+      "description": "Lesson order within the course"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Lesson duration in minutes"
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "link",
+              "document"
+            ]
+          }
+        }
+      },
+      "description": "Lesson materials and resources"
+    }
+  },
+  "required": [
+    "title",
+    "course_id",
+    "order"
+  ]
+}

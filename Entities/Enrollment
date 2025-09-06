@@ -1,0 +1,40 @@
+{
+  "name": "Enrollment",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "ID of the enrolled student"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "ID of the course"
+    },
+    "progress": {
+      "type": "number",
+      "default": 0,
+      "description": "Course completion percentage (0-100)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "dropped"
+      ],
+      "default": "active",
+      "description": "Enrollment status"
+    },
+    "completed_lessons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of completed lesson IDs"
+    }
+  },
+  "required": [
+    "student_id",
+    "course_id"
+  ]
+}

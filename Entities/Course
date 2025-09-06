@@ -1,0 +1,89 @@
+{
+  "name": "Course",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Course title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Course description"
+    },
+    "thumbnail": {
+      "type": "string",
+      "description": "Course thumbnail image URL"
+    },
+    "teacher_id": {
+      "type": "string",
+      "description": "ID of the teacher who created the course"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "programming",
+        "design",
+        "business",
+        "marketing",
+        "data_science",
+        "other"
+      ],
+      "default": "other",
+      "description": "Course category"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced"
+      ],
+      "default": "beginner",
+      "description": "Course difficulty level"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft",
+      "description": "Course status"
+    },
+    "duration_hours": {
+      "type": "number",
+      "description": "Estimated course duration in hours"
+    }
+  },
+  "required": [
+    "title",
+    "description",
+    "teacher_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "student",
+            "teacher",
+            "admin"
+          ]
+        }
+      }
+    },
+    "write": {
+      "$or": [
+        {
+          "teacher_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

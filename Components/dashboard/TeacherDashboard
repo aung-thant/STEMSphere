@@ -1,0 +1,236 @@
+
+import React, { useState, useEffect } from "react";
+import { Course } from "@/entities/Course";
+import { Enrollment } from "@/entities/Enrollment";
+import { Assignment } from "@/entities/Assignment";
+import { Submission } from "@/entities/Submission";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, Users, FileText, Clock, Plus, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+export default function TeacherDashboard({ user }) {
+  const [courses, setCourses] = useState([]);
+  const [enrollments, setEnrollments] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true); // Ensure loading is true at the start of the data fetch
+        const [courseData, assignmentData] = await Promise.all([
+          Course.filter({ teacher_id: user.id }),
+          Assignment.list()
+        ]);
+
+        setCourses(courseData);
+        
+        const myCourseIds = courseData.map(c => c.id);
+        const myAssignments = assignmentData.filter(a => myCourseIds.includes(a.course_id));
+        setAssignments(myAssignments);
+
+        // Load enrollments for teacher's courses
+        const enrollmentData = await Enrollment.list();
+        const myEnrollments = enrollmentData.filter(e => myCourseIds.includes(e.course_id));
+        setEnrollments(myEnrollments);
+
+        // Load submissions for teacher's assignments
+        const submissionData = await Submission.list();
+        const mySubmissions = submissionData.filter(s => 
+          myAssignments.some(a => a.id === s.assignment_id)
+        );
+        setSubmissions(mySubmissions);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        // Optionally handle error state
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      loadDashboardData();
+    } else {
+      // If user.id is not available, set loading to false and clear data
+      setLoading(false);
+      setCourses([]);
+      setEnrollments([]);
+      setAssignments([]);
+      setSubmissions([]);
+    }
+  }, [user?.id]); // Depend on user.id to re-run when user changes
+
+  const getPendingGrading = () => {
+    return submissions.filter(s => !s.grade && s.status === 'submitted').length;
+  };
+
+  const getTotalStudents = () => {
+    const uniqueStudents = new Set(enrollments.map(e => e.student_id));
+    return uniqueStudents.size;
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">My Courses</p>
+                <p className="text-3xl font-bold">{courses.length}</p>
+              </div>
+              <BookOpen className="w-8 h-8 text-blue-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Total Students</p>
+                <p className="text-3xl font-bold">{getTotalStudents()}</p>
+              </div>
+              <Users className="w-8 h-8 text-green-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Assignments</p>
+                <p className="text-3xl font-bold">{assignments.length}</p>
+              </div>
+              <FileText className="w-8 h-8 text-orange-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-red-100 text-sm font-medium">Pending Grading</p>
+                <p className="text-3xl font-bold">{getPendingGrading()}</p>
+              </div>
+              <Clock className="w-8 h-8 text-red-200" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* My Courses */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-500" />
+              My Courses
+            </CardTitle>
+            <Button size="sm" asChild>
+              <Link to={createPageUrl("CreateCourse")}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Course
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {courses.slice(0, 4).map((course) => {
+                const courseEnrollments = enrollments.filter(e => e.course_id === course.id);
+                return (
+                  <div key={course.id} className="p-4 border rounded-xl">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-semibold">{course.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {courseEnrollments.length} students enrolled
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="capitalize">
+                          {course.status}
+                        </Badge>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={createPageUrl(`Course?id=${course.id}`)}>
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="capitalize">
+                      {course.category}
+                    </Badge>
+                  </div>
+                );
+              })}
+              {courses.length === 0 && (
+                <div className="text-center py-8">
+                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No courses created yet</p>
+                  <Button asChild className="mt-4">
+                    <Link to={createPageUrl("CreateCourse")}>Create Your First Course</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Submissions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-500" />
+              Recent Submissions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {submissions.slice(0, 4).map((submission) => (
+                <div key={submission.id} className="p-4 border rounded-xl">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold">Assignment {submission.assignment_id}</h4>
+                      <p className="text-sm text-gray-600">Student: {submission.student_id}</p>
+                      <Badge 
+                        variant="outline" 
+                        className={`mt-2 ${
+                          submission.status === 'graded' ? 'bg-green-50 text-green-700' : 
+                          submission.status === 'late' ? 'bg-red-50 text-red-700' : 
+                          'bg-yellow-50 text-yellow-700'
+                        }`}
+                      >
+                        {submission.status}
+                      </Badge>
+                    </div>
+                    <Button size="sm" variant="outline">
+                      Review
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {submissions.length === 0 && (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No submissions yet</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
